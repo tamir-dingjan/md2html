@@ -140,5 +140,17 @@ class TestSplitTextNodes(unittest.TestCase):
         self.assertEqual(text_nodes, expected_split)
 
 
+class TestExtractMarkdownImages(unittest.TestCase):
+    def test_extract_markdown_images(self):
+        text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+        alt_texts = ["rick roll", "obi wan"]
+        image_urls = [
+            "https://i.imgur.com/aKaOqIh.gif",
+            "https://i.imgur.com/fJRm4Vk.jpeg",
+        ]
+        extracted = [(i, j) for i, j in zip(alt_texts, image_urls)]
+        self.assertEqual(extracted, extract_markdown_images(text))
+
+
 if __name__ == "__main__":
     unittest.main()
