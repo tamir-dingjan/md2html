@@ -64,3 +64,11 @@ def split_nodes_delimiter(old_nodes: list, delimiter: str, text_type: TextType):
                 normal_text = True
 
     return new_nodes
+
+
+def extract_markdown_images(text: str):
+    alt_texts = re.findall("\[(.*?)\]", text)
+    image_urls = re.findall("\((.*?)\)", text)
+
+    extracted = [(i, j) for i, j in zip(alt_texts, image_urls)]
+    return extracted
