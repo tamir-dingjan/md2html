@@ -152,5 +152,14 @@ class TestExtractMarkdownImages(unittest.TestCase):
         self.assertEqual(extracted, extract_markdown_images(text))
 
 
+class TestExtractMarkdownLinks(unittest.TestCase):
+    def test_extract_markdown_links(self):
+        text = "This is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com/@bootdotdev)"
+        links = ["to boot dev", "to youtube"]
+        urls = ["https://www.boot.dev", "https://www.youtube.com/@bootdotdev"]
+        extracted = [(i, j) for i, j in zip(links, urls)]
+        self.assertEqual(extracted, extract_markdown_links(text))
+
+
 if __name__ == "__main__":
     unittest.main()
