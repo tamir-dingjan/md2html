@@ -78,3 +78,15 @@ def extract_markdown_links(text: str):
     urls = re.findall("\((.*?)\)", text)
     extracted = [(i, j) for i, j in zip(links, urls)]
     return extracted
+
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if (node.tag != "img") or (node.text_type != TextType.IMAGE):
+            raise ValueError(
+                f"TextNode provided does not appear to be an image node: {node.__repr__()}"
+            )
+        extracted = extract_markdown_images(node.text)
+        # Extract the normal text fields from the textnode
+        # We can do this by moving along the string
