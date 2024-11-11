@@ -80,13 +80,65 @@ def extract_markdown_links(text: str):
     return extracted
 
 
-def split_nodes_image(old_nodes):
+def split_nodes_image(old_nodes: list):
     new_nodes = []
     for node in old_nodes:
-        if (node.tag != "img") or (node.text_type != TextType.IMAGE):
+        if TextType(node.text_type) != TextType.TEXT:
             raise ValueError(
-                f"TextNode provided does not appear to be an image node: {node.__repr__()}"
+                f"TextNode provided does not appear to have the expected TextType: {node.__repr__()}"
             )
         extracted = extract_markdown_images(node.text)
         # Extract the normal text fields from the textnode
-        # We can do this by moving along the string
+        # We can do this by splitting the text by the appropriate regex
+        # Python will keeep the matched text when capture groups are used in the regex pattern
+        # This means we don't actually need to extract any fields, we can just process the node text
+        # with a rotating filter for how to handle each element
+        text_fields = re.split("\!\[(.*?\]\(.*?)\)", node.text)
+
+        # The first element will always be the normal text, because the split regex will return
+        # an empty string as the first element if the text begins with a matching field
+        field_type = "text"
+
+        while len(text_fields) > 0:
+            _text = text_fields.pop(0)
+            if field_type == "text":
+                new_nodes.append(TextNode(_text, TextType.TEXT))
+                field_type = "image"
+            elif field_type == "image":
+                alt_text, url = _text.split("](")
+                new_nodes.append(TextNode(alt_text, TextType.IMAGE, url=url))
+                field_type = "text"
+
+    return new_nodes
+
+
+def split_nodes_link(old_nodes: list):
+    new_nodes = []
+    for node in old_nodes:
+        if TextType(node.text_type) != TextType.TEXT:
+            raise ValueError(
+                f"TextNode provided does not appear to have the expected TextType: {node.__repr__()}"
+            )
+        extracted = extract_markdown_images(node.text)
+        # Extract the normal text fields from the textnode
+        # We can do this by splitting the text by the appropriate regex
+        # Python will keeep the matched text when capture groups are used in the regex pattern
+        # This means we don't actually need to extract any fields, we can just process the node text
+        # with a rotating filter for how to handle each element
+        text_fields = re.split("\[(.*?\]\(.*?)\)", node.text)
+
+        # The first element will always be the normal text, because the split regex will return
+        # an empty string as the first element if the text begins with a matching field
+        field_type = "text"
+
+        while len(text_fields) > 0:
+            _text = text_fields.pop(0)
+            if field_type == "text":
+                new_nodes.append(TextNode(_text, TextType.TEXT))
+                field_type = "link"
+            elif field_type == "link":
+                alt_text, url = _text.split("](")
+                new_nodes.append(TextNode(alt_text, TextType.LINK, url=url))
+                field_type = "text"
+
+    return new_nodes

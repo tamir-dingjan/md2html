@@ -151,6 +151,11 @@ class TestExtractMarkdownImages(unittest.TestCase):
         extracted = [(i, j) for i, j in zip(alt_texts, image_urls)]
         self.assertEqual(extracted, extract_markdown_images(text))
 
+    def test_extract_markdown_images_no_image_in_input(self):
+        text = "Just text here"
+        extracted = []
+        self.assertEqual(extracted, extract_markdown_images(text))
+
 
 class TestExtractMarkdownLinks(unittest.TestCase):
     def test_extract_markdown_links(self):
@@ -159,6 +164,78 @@ class TestExtractMarkdownLinks(unittest.TestCase):
         urls = ["https://www.boot.dev", "https://www.youtube.com/@bootdotdev"]
         extracted = [(i, j) for i, j in zip(links, urls)]
         self.assertEqual(extracted, extract_markdown_links(text))
+
+
+class TestSplitNodesImage(unittest.TestCase):
+    def test_split_node_with_image_in_middle_of_line(self):
+        text = "This is a text line with ![an image](https://link.to.an.image) an image in the middle of it"
+        text_node = TextNode(text, TextType.TEXT, url=None)
+        nodes = [
+            TextNode("This is a text line with ", TextType.TEXT, url=None),
+            TextNode("an image", TextType.IMAGE, url="https://link.to.an.image"),
+            TextNode(" an image in the middle of it", TextType.TEXT, url=None),
+        ]
+        split_nodes = split_nodes_image([text_node])
+        self.assertEqual(nodes, split_nodes)
+
+    def test_split_node_with_image_at_start_of_line(self):
+        text = "![an image](https://link.to.an.image) an image at the start of it"
+        text_node = TextNode(text, TextType.TEXT, url=None)
+        nodes = [
+            TextNode("", TextType.TEXT, url=None),
+            TextNode("an image", TextType.IMAGE, url="https://link.to.an.image"),
+            TextNode(" an image at the start of it", TextType.TEXT, url=None),
+        ]
+        split_nodes = split_nodes_image([text_node])
+        self.assertEqual(nodes, split_nodes)
+
+    def test_split_node_with_image_at_end_of_line(self):
+        text = "This is a text line with an image at the very end ![an image](https://link.to.an.image)"
+        text_node = TextNode(text, TextType.TEXT, url=None)
+        nodes = [
+            TextNode(
+                "This is a text line with an image at the very end",
+                TextType.TEXT,
+                url=None,
+            ),
+            TextNode("an image", TextType.IMAGE, url="https://link.to.an.image"),
+            TextNode("", TextType.TEXT, url=None),
+        ]
+
+
+class TestSplitNodesLink(unittest.TestCase):
+    def test_split_node_with_link_in_middle_of_line(self):
+        text = "This is a text line with [a link](https://link.to.a.link) a link in the middle of it"
+        text_node = TextNode(text, TextType.TEXT, url=None)
+        nodes = [
+            TextNode("This is a text line with ", TextType.TEXT, url=None),
+            TextNode("a link", TextType.LINK, url="https://link.to.a.link"),
+            TextNode(" a link in the middle of it", TextType.TEXT, url=None),
+        ]
+        split_nodes = split_nodes_link([text_node])
+        self.assertEqual(nodes, split_nodes)
+
+    def test_split_node_with_link_at_start_of_line(self):
+        text = "[a link](https://link.to.a.link) a link at the start of it"
+        text_node = TextNode(text, TextType.TEXT, url=None)
+        nodes = [
+            TextNode("", TextType.TEXT, url=None),
+            TextNode("a link", TextType.LINK, url="https://link.to.a.link"),
+            TextNode(" a link at the start of it", TextType.TEXT, url=None),
+        ]
+        split_nodes = split_nodes_link([text_node])
+        self.assertEqual(nodes, split_nodes)
+
+    def test_split_node_with_link_at_end_of_line(self):
+        text = "a link at the end of it [a link](https://link.to.a.link)"
+        text_node = TextNode(text, TextType.TEXT, url=None)
+        nodes = [
+            TextNode("a link at the end of it ", TextType.TEXT, url=None),
+            TextNode("a link", TextType.LINK, url="https://link.to.a.link"),
+            TextNode("", TextType.TEXT, url=None),
+        ]
+        split_nodes = split_nodes_link([text_node])
+        self.assertEqual(nodes, split_nodes)
 
 
 if __name__ == "__main__":
