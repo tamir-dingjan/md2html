@@ -120,8 +120,8 @@ class TestSplitTextNodes(unittest.TestCase):
         self.assertEqual(text_nodes, expected_split)
 
     def test_split_text_node_code_start_of_line(self):
-        text_node = TextNode("```Hello``` world it's me", TextType.TEXT, url=None)
-        text_nodes = split_nodes_delimiter([text_node], "```", TextType.CODE)
+        text_node = TextNode("`Hello` world it's me", TextType.TEXT, url=None)
+        text_nodes = split_nodes_delimiter([text_node], "`", TextType.CODE)
         expected_split = [
             TextNode("", TextType.TEXT, url=None),
             TextNode("Hello", TextType.CODE, url=None),
@@ -130,8 +130,8 @@ class TestSplitTextNodes(unittest.TestCase):
         self.assertEqual(text_nodes, expected_split)
 
     def test_split_text_node_code_end_of_line(self):
-        text_node = TextNode("Hello world it's ```me```", TextType.TEXT, url=None)
-        text_nodes = split_nodes_delimiter([text_node], "```", TextType.CODE)
+        text_node = TextNode("Hello world it's `me`", TextType.TEXT, url=None)
+        text_nodes = split_nodes_delimiter([text_node], "`", TextType.CODE)
         expected_split = [
             TextNode("Hello world it's ", TextType.TEXT, url=None),
             TextNode("me", TextType.CODE, url=None),
@@ -236,6 +236,27 @@ class TestSplitNodesLink(unittest.TestCase):
         ]
         split_nodes = split_nodes_link([text_node])
         self.assertEqual(nodes, split_nodes)
+
+
+class TestTextToTextNodes(unittest.TestCase):
+    def test_text_to_text_nodes(self):
+        text = "This is **text** with an *italic* word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        nodes = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode(
+                "obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"
+            ),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+            TextNode("", TextType.TEXT),
+        ]
+        self.assertEqual(nodes, text_to_textnodes(text))
 
 
 if __name__ == "__main__":

@@ -83,11 +83,11 @@ def extract_markdown_links(text: str):
 def split_nodes_image(old_nodes: list):
     new_nodes = []
     for node in old_nodes:
-        if TextType(node.text_type) != TextType.TEXT:
-            raise ValueError(
-                f"TextNode provided does not appear to have the expected TextType: {node.__repr__()}"
-            )
+        # If there are no markdown images in this node, append it the output as-is
         extracted = extract_markdown_images(node.text)
+        if extracted == []:
+            new_nodes.append(node)
+            continue
         # Extract the normal text fields from the textnode
         # We can do this by splitting the text by the appropriate regex
         # Python will keeep the matched text when capture groups are used in the regex pattern
@@ -115,11 +115,11 @@ def split_nodes_image(old_nodes: list):
 def split_nodes_link(old_nodes: list):
     new_nodes = []
     for node in old_nodes:
-        if TextType(node.text_type) != TextType.TEXT:
-            raise ValueError(
-                f"TextNode provided does not appear to have the expected TextType: {node.__repr__()}"
-            )
-        extracted = extract_markdown_images(node.text)
+        # If there are no markdown links in this node, append it the output as-is
+        extracted = extract_markdown_links(node.text)
+        if extracted == []:
+            new_nodes.append(node)
+            continue
         # Extract the normal text fields from the textnode
         # We can do this by splitting the text by the appropriate regex
         # Python will keeep the matched text when capture groups are used in the regex pattern
@@ -142,3 +142,19 @@ def split_nodes_link(old_nodes: list):
                 field_type = "text"
 
     return new_nodes
+
+
+def text_to_textnodes(text: str):
+    node = [TextNode(text, TextType.TEXT, url=None)]
+    delims = {
+        "**": TextType.BOLD,
+        "*": TextType.ITALIC,
+        "`": TextType.CODE,
+    }
+    for delim, text_type in delims.items():
+        node = split_nodes_delimiter(node, delim, text_type)
+
+    node = split_nodes_image(node)
+    node = split_nodes_link(node)
+
+    return node
