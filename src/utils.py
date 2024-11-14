@@ -158,3 +158,8 @@ def text_to_textnodes(text: str):
     node = split_nodes_link(node)
 
     return node
+
+
+def markdown_to_blocks(markdown: str):
+    blocks = markdown.split("\n\n")
+    return blocks
