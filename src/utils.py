@@ -1,5 +1,6 @@
 from textnode import TextType, TextNode
 from htmlnode import LeafNode
+from blocktypes import BlockType
 import re
 
 
@@ -163,3 +164,26 @@ def text_to_textnodes(text: str):
 def markdown_to_blocks(markdown: str):
     blocks = markdown.split("\n\n")
     return blocks
+
+
+def block_to_blocktype(text: str):
+    if text.startswith("#") and (len(text.split(" ")[0]) <= 6):
+        return BlockType.HEADING
+    elif text.startswith("```") and text.endswith("```"):
+        return BlockType.CODE
+    elif [x.startswith(">") for x in text.split("\n")].count(False) == 0:
+        return BlockType.QUOTE
+    elif [x.startswith("- ") or x.startswith("* ") for x in text.split("\n")].count(
+        False
+    ) == 0:
+        return BlockType.UNORDERED_LIST
+    elif text.startswith("1. "):
+        i = 1
+        for line in text.split("\n"):
+
+            if not line.startswith(f"{i}. "):
+                return BlockType.PARAGRAPH
+            i += 1
+        return BlockType.ORDERED_LIST
+    else:
+        return BlockType.PARAGRAPH

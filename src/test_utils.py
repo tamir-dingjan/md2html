@@ -283,5 +283,31 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
         )
 
 
+class TestBlockToBlockType(unittest.TestCase):
+    def test_block_to_block_type_paragraph(self):
+        text = "This is a normal\nparagraph with some\nnew linesof text.\n"
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(text))
+
+    def test_block_to_block_type_heading(self):
+        text = "## This is a heading"
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(text))
+
+    def test_block_to_block_type_code(self):
+        text = "```This is a code block```"
+        self.assertEqual(BlockType.CODE, block_to_blocktype(text))
+
+    def test_block_to_block_type_unordered_list(self):
+        text = """* This is the first list item in a list block
+* This is a list item
+* This is another list item"""
+        self.assertEqual(BlockType.UNORDERED_LIST, block_to_blocktype(text))
+
+    def test_block_to_block_type_ordered_list(self):
+        text = """1. This is the first list item in a list block
+2. This is a list item
+3. This is another list item"""
+        self.assertEqual(BlockType.ORDERED_LIST, block_to_blocktype(text))
+
+
 if __name__ == "__main__":
     unittest.main()
