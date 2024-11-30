@@ -5,29 +5,52 @@ from utils import *
 
 
 class TestHTMLNode(unittest.TestCase):
+
+    def test_texttype_coverage(self):
+        # Make sure the conversion to HTML gives a LeafNode for every valid TextType
+        for text_type in TextType:
+            text_node = TextNode("Iterating over TextTypes", text_type, url=None)
+            self.assertIsInstance(text_node_to_html_node(text_node), LeafNode)
+
     def test_convert_text(self):
         textnode = TextNode("Hello world", TextType.TEXT, url=None)
         leafnode = LeafNode(tag=None, value="Hello world", props=None)
         converted_node = text_node_to_html_node(textnode)
-        self.assertEqual(leafnode.to_html(), converted_node.to_html())
+
+        # Test the LeafNode conversion gives the right result
+        self.assertEqual(leafnode.__repr__(), converted_node.__repr__())
+
+        # Test the HTML output works
+        html = "Hello world"
+        self.assertEqual(html, leafnode.to_html())
+        self.assertEqual(html, converted_node.to_html())
 
     def test_convert_bold(self):
         textnode = TextNode("Hello world", TextType.BOLD, url=None)
         leafnode = LeafNode(tag="b", value="Hello world", props=None)
         converted_node = text_node_to_html_node(textnode)
-        self.assertEqual(leafnode.to_html(), converted_node.to_html())
+        html = "<b>Hello world</b>"
+        self.assertEqual(leafnode.__repr__(), converted_node.__repr__())
+        self.assertEqual(html, leafnode.to_html())
+        self.assertEqual(html, converted_node.to_html())
 
     def test_convert_italic(self):
         textnode = TextNode("Hello world", TextType.ITALIC, url=None)
         leafnode = LeafNode(tag="i", value="Hello world", props=None)
         converted_node = text_node_to_html_node(textnode)
-        self.assertEqual(leafnode.to_html(), converted_node.to_html())
+        html = "<i>Hello world</i>"
+        self.assertEqual(leafnode.__repr__(), converted_node.__repr__())
+        self.assertEqual(html, leafnode.to_html())
+        self.assertEqual(html, converted_node.to_html())
 
     def test_convert_code(self):
         textnode = TextNode("Hello world", TextType.CODE, url=None)
         leafnode = LeafNode(tag="code", value="Hello world", props=None)
         converted_node = text_node_to_html_node(textnode)
-        self.assertEqual(leafnode.to_html(), converted_node.to_html())
+        html = "<code>Hello world</code>"
+        self.assertEqual(leafnode.__repr__(), converted_node.__repr__())
+        self.assertEqual(html, leafnode.to_html())
+        self.assertEqual(html, converted_node.to_html())
 
     def test_convert_link(self):
         textnode = TextNode("Hello world", TextType.LINK, url="https://www.boot.dev")
@@ -35,7 +58,10 @@ class TestHTMLNode(unittest.TestCase):
             tag="a", value="Hello world", props={"href": "https://www.boot.dev"}
         )
         converted_node = text_node_to_html_node(textnode)
-        self.assertEqual(leafnode.to_html(), converted_node.to_html())
+        html = '<a href="https://www.boot.dev">Hello world</a>'
+        self.assertEqual(leafnode.__repr__(), converted_node.__repr__())
+        self.assertEqual(html, leafnode.to_html())
+        self.assertEqual(html, converted_node.to_html())
 
     def test_convert_image(self):
         textnode = TextNode("Hello world", TextType.IMAGE, url="https://www.boot.dev")
@@ -45,7 +71,10 @@ class TestHTMLNode(unittest.TestCase):
             props={"src": "https://www.boot.dev", "alt": "Hello world"},
         )
         converted_node = text_node_to_html_node(textnode)
-        self.assertEqual(leafnode.to_html(), converted_node.to_html())
+        html = '<img src="https://www.boot.dev" alt="Hello world"></img>'
+        self.assertEqual(leafnode.__repr__(), converted_node.__repr__())
+        self.assertEqual(html, leafnode.to_html())
+        self.assertEqual(html, converted_node.to_html())
 
 
 class TestSplitTextNodes(unittest.TestCase):
@@ -119,9 +148,34 @@ class TestSplitTextNodes(unittest.TestCase):
         ]
         self.assertEqual(text_nodes, expected_split)
 
+    def test_split_text_node_code(self):
+        text_node = TextNode(
+            """```
+def hello_world():
+    print("Hello, world!")
+```""",
+            TextType.TEXT,
+            url=None,
+        )
+        text_nodes = split_nodes_delimiter([text_node], "```", TextType.CODE)
+        expected_split = [
+            TextNode("", TextType.TEXT, url=None),
+            TextNode(
+                """
+def hello_world():
+    print("Hello, world!")
+""",
+                TextType.CODE,
+                url=None,
+            ),
+            TextNode("", TextType.TEXT, url=None),
+        ]
+
+        self.assertEqual(text_nodes, expected_split)
+
     def test_split_text_node_code_start_of_line(self):
-        text_node = TextNode("`Hello` world it's me", TextType.TEXT, url=None)
-        text_nodes = split_nodes_delimiter([text_node], "`", TextType.CODE)
+        text_node = TextNode("```Hello``` world it's me", TextType.TEXT, url=None)
+        text_nodes = split_nodes_delimiter([text_node], "```", TextType.CODE)
         expected_split = [
             TextNode("", TextType.TEXT, url=None),
             TextNode("Hello", TextType.CODE, url=None),
@@ -130,8 +184,8 @@ class TestSplitTextNodes(unittest.TestCase):
         self.assertEqual(text_nodes, expected_split)
 
     def test_split_text_node_code_end_of_line(self):
-        text_node = TextNode("Hello world it's `me`", TextType.TEXT, url=None)
-        text_nodes = split_nodes_delimiter([text_node], "`", TextType.CODE)
+        text_node = TextNode("Hello world it's ```me```", TextType.TEXT, url=None)
+        text_nodes = split_nodes_delimiter([text_node], "```", TextType.CODE)
         expected_split = [
             TextNode("Hello world it's ", TextType.TEXT, url=None),
             TextNode("me", TextType.CODE, url=None),
@@ -240,7 +294,7 @@ class TestSplitNodesLink(unittest.TestCase):
 
 class TestTextToTextNodes(unittest.TestCase):
     def test_text_to_text_nodes(self):
-        text = "This is **text** with an *italic* word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        text = "This is **text** with an *italic* word and a ```code block``` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
         nodes = [
             TextNode("This is ", TextType.TEXT),
             TextNode("text", TextType.BOLD),
@@ -261,7 +315,7 @@ class TestTextToTextNodes(unittest.TestCase):
 
 class TestMarkdownToBlocks(unittest.TestCase):
     def test_markdown_to_blocks(self):
-        text = """# This is a heading
+        text = """# This is a H1 heading
 
 This is a paragraph of text. It has some **bold** and *italic* words inside of it.
 
@@ -270,7 +324,7 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
 * This is another list item"""
         blocks = markdown_to_blocks(text)
         self.assertEqual(3, len(blocks))
-        self.assertEqual("# This is a heading", blocks[0])
+        self.assertEqual("# This is a H1 heading", blocks[0])
         self.assertEqual(
             "This is a paragraph of text. It has some **bold** and *italic* words inside of it.",
             blocks[1],
@@ -289,8 +343,8 @@ class TestBlockToBlockType(unittest.TestCase):
         self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(text))
 
     def test_block_to_block_type_heading(self):
-        text = "## This is a heading"
-        self.assertEqual(BlockType.HEADING, block_to_blocktype(text))
+        text = "## This is a H2 heading"
+        self.assertEqual(BlockType.H2, block_to_blocktype(text))
 
     def test_block_to_block_type_code(self):
         text = "```This is a code block```"
@@ -307,6 +361,149 @@ class TestBlockToBlockType(unittest.TestCase):
 2. This is a list item
 3. This is another list item"""
         self.assertEqual(BlockType.ORDERED_LIST, block_to_blocktype(text))
+
+
+class TestBlockToHtmlNode(unittest.TestCase):
+    def test_block_to_html_node_h1(self):
+        text = """# This is a H1 heading"""
+        html = block_to_html_node(text)
+        target = "<div><h1>This is a H1 heading</h1></div>"
+        self.assertEqual(target, html.to_html())
+
+    def test_block_to_html_node_code(self):
+        text = """```
+def hello_world():
+    print("Hello, world!")
+```"""
+        html = block_to_html_node(text)
+        target = """<div><pre><code>
+def hello_world():
+    print("Hello, world!")
+</code></pre></div>"""
+        self.assertEqual(target, html.to_html())
+
+
+class TestMarkdownToHtmlNode(unittest.TestCase):
+    def test_h1(self):
+        text = """# This is a H1 heading"""
+        html = markdown_to_html_node(text)
+        target = "<div><div><h1>This is a H1 heading</h1></div></div>"
+        self.assertEqual(target, html.to_html())
+
+    def test_h2_bold(self):
+        text = """## This is a H2 heading with **bold** text"""
+        html = markdown_to_html_node(text)
+        target = (
+            "<div><div><h2>This is a H2 heading with <b>bold</b> text</h2></div></div>"
+        )
+        self.assertEqual(target, html.to_html())
+
+    def test_unordered_list(self):
+        text = """- Here is an unordered list
+- With multiple items
+- In no particular order"""
+        html = markdown_to_html_node(text)
+        target = """<div><div><ul><li>Here is an unordered list</li><li>With multiple items</li><li>In no particular order</li></ul></div></div>"""
+        self.assertEqual(target, html.to_html())
+
+    def test_ordered_list(self):
+        text = """1. And here is an ordered list
+2. With another item
+3. And some more"""
+        html = markdown_to_html_node(text)
+        target = """<div><div><ol><li>And here is an ordered list</li><li>With another item</li><li>And some more</li></ol></div></div>"""
+        self.assertEqual(target, html.to_html())
+
+    def test_quote(self):
+        text = """> This is a blockquote.
+> It has multiple lines
+> Across the page"""
+        html = markdown_to_html_node(text)
+        target = """<div><div><blockquote>This is a blockquote.
+It has multiple lines
+Across the page</blockquote></div></div>"""
+        self.assertEqual(target, html.to_html())
+
+    def test_link(self):
+        text = "[This is a link](https://example.com)"
+        html = markdown_to_html_node(text)
+        target = """<div><div><p><a href="https://example.com">This is a link</a></p></div></div>"""
+        self.assertEqual(target, html.to_html())
+
+    def test_image(self):
+        text = "![Alt text for an image](https://example.com/image.jpg)"
+        html = markdown_to_html_node(text)
+        target = """<div><div><p><img src="https://example.com/image.jpg" alt="Alt text for an image"></img></p></div></div>"""
+        self.assertEqual(target, html.to_html())
+
+    def test_code(self):
+        text = """```
+def hello_world():
+    print("Hello, world!")
+```"""
+
+        html = markdown_to_html_node(text)
+        target = """<div><div><pre><code>
+def hello_world():
+    print("Hello, world!")
+</code></pre></div></div>"""
+
+        self.assertEqual(target, html.to_html())
+
+    def test_document(self):
+        self.maxDiff = None
+        text = """# Heading 1
+
+## Heading 2
+
+This is a paragraph with **bold text**, normal text, 
+and *italic text* on two lines.
+
+- Here is an unordered list
+- With multiple items
+- In no particular order
+
+1. And here is an ordered list
+2. With another item
+3. And some more
+
+A blockquote might appear as:
+
+> This is a blockquote.
+> It has multiple lines
+> Across the page
+
+[This is a link](https://example.com)
+
+![Alt text for an image](https://example.com/image.jpg)
+
+```
+def hello_world():
+    print("Hello, world!")
+```"""
+        target = [
+            "<div><div><h1>Heading 1</h1></div>",
+            "<div><h2>Heading 2</h2></div>",
+            """<div><p>This is a paragraph with <b>bold text</b>, normal text, 
+and <i>italic text</i> on two lines.</p></div>""",
+            "<div><ul><li>Here is an unordered list</li><li>With multiple items</li><li>In no particular order</li></ul></div>",
+            "<div><ol><li>And here is an ordered list</li><li>With another item</li><li>And some more</li></ol></div>",
+            "<div><p>A blockquote might appear as:</p></div>",
+            """<div><blockquote>This is a blockquote.
+It has multiple lines
+Across the page</blockquote></div>""",
+            '<div><p><a href="https://example.com">This is a link</a></p></div>',
+            '<div><p><img src="https://example.com/image.jpg" alt="Alt text for an image"></img></p></div>',
+            """<div><pre><code>
+def hello_world():
+    print("Hello, world!")
+</code></pre></div></div>""",
+        ]
+
+        target = "".join(target)
+
+        html = markdown_to_html_node(text)
+        self.assertEqual(target, html.to_html())
 
 
 if __name__ == "__main__":

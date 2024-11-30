@@ -147,3 +147,6 @@ class ParentNode(HTMLNode):
             rendered += child.to_html()
         rendered += f"</{self.tag}>"
         return rendered
+
+    def add_child(self, child: HTMLNode):
+        self.children.append(child)

@@ -1,5 +1,5 @@
 from textnode import TextType, TextNode
-from htmlnode import LeafNode
+from htmlnode import LeafNode, ParentNode
 from blocktypes import BlockType
 import re
 
@@ -150,7 +150,7 @@ def text_to_textnodes(text: str):
     delims = {
         "**": TextType.BOLD,
         "*": TextType.ITALIC,
-        "`": TextType.CODE,
+        "```": TextType.CODE,
     }
     for delim, text_type in delims.items():
         node = split_nodes_delimiter(node, delim, text_type)
@@ -167,8 +167,21 @@ def markdown_to_blocks(markdown: str):
 
 
 def block_to_blocktype(text: str):
-    if text.startswith("#") and (len(text.split(" ")[0]) <= 6):
-        return BlockType.HEADING
+    if text.startswith("#"):
+        header = text.split(" ")[0]
+        match header:
+            case "#":
+                return BlockType.H1
+            case "##":
+                return BlockType.H2
+            case "###":
+                return BlockType.H3
+            case "####":
+                return BlockType.H4
+            case "#####":
+                return BlockType.H5
+            case "######":
+                return BlockType.H6
     elif text.startswith("```") and text.endswith("```"):
         return BlockType.CODE
     elif [x.startswith(">") for x in text.split("\n")].count(False) == 0:
@@ -187,3 +200,99 @@ def block_to_blocktype(text: str):
         return BlockType.ORDERED_LIST
     else:
         return BlockType.PARAGRAPH
+
+
+def map_blocktype_to_tag(blocktype: BlockType):
+    match blocktype:
+        case BlockType.PARAGRAPH:
+            return "p"
+        case BlockType.H1:
+            return "h1"
+        case BlockType.H2:
+            return "h2"
+        case BlockType.H3:
+            return "h3"
+        case BlockType.H4:
+            return "h4"
+        case BlockType.H5:
+            return "h5"
+        case BlockType.H6:
+            return "h6"
+        case BlockType.CODE:
+            return "pre"
+        case BlockType.QUOTE:
+            return "blockquote"
+        case BlockType.UNORDERED_LIST:
+            return "ul"
+        case BlockType.ORDERED_LIST:
+            return "ol"
+
+
+def block_to_html_node(block: str):
+    blocktype = block_to_blocktype(block)
+    tag = map_blocktype_to_tag(blocktype)
+
+    # The block type determines how the text should be packaged
+    # The TextNodes represent inline text elements,
+    # which the block needs to arrange depending on the block type:
+    # A BlockType.PARAGRAPH block should wrap all of its TextNodes in a <p> tag
+    # A BlockType.H1 block should wrap all of its TextNodes in a <h1> tag
+    # A BlockType.H2 block should wrap all of its TextNodes in a <h2> tag
+    # A BlockType.H3 block should wrap all of its TextNodes in a <h3> tag
+    # A BlockType.H4 block should wrap all of its TextNodes in a <h4> tag
+    # A BlockType.H5 block should wrap all of its TextNodes in a <h5> tag
+    # A BlockType.H6 block should wrap all of its TextNodes in a <h6> tag
+    # A BlockType.CODE block should wrap all of its TextNodes in a <pre> tag
+    # A BlockType.QUOTE block should wrap all of its TextNodes in a <blockquote> tag
+    # A BlockType.UNORDERED_LIST block should wrap all of its TextNodes in an <ul> tag
+    # A BlockType.ORDERED_LIST block should wrap all of its TextNodes in an <ol> tag
+
+    # Depending on the block type, we need to strip the MarkDown formatting characters
+    # out of the text before converting the text to TextNodes
+    if tag in ["h1", "h2", "h3", "h4", "h5", "h6"]:
+        block = block.lstrip("# ")
+
+    # For code blocks, we keep the backticks so that the TextNode can be correctly identified as code
+    if tag == "pre":
+        pass
+
+    # For quote blocks, we need to remove the > at the start of each line
+    if tag == "blockquote":
+        block = "\n".join([x.lstrip("> ") for x in block.split("\n")])
+
+    # For unordered lists, we need to remove the "- " or "* " at the start of each line
+    if tag == "ul":
+        block = "\n".join([x.lstrip("- ").lstrip("* ") for x in block.split("\n")])
+
+    # For ordered lists, we need to remove the "X. " at the start of each line
+    if tag == "ol":
+        block = "\n".join([x.lstrip("1234567890. ") for x in block.split("\n")])
+
+    # Depending on the BlockType, we may need to wrap each line of the block in a tag
+    # For lists, we need to wrap each line in a <li> tag
+    htmlnode = ParentNode(tag, children=[], props=None)
+
+    if tag in ["ul", "ol"]:
+        for line in block.split("\n"):
+            textnodes = text_to_textnodes(line)
+            node_to_add = ParentNode("li", children=[], props=None)
+            for textnode in textnodes:
+                node_to_add.children.append(text_node_to_html_node(textnode))
+            htmlnode.children.append(node_to_add)
+
+    # For non-list BlockTypes, we do not need to wrap each line of the block text
+    else:
+        textnodes = text_to_textnodes(block)
+        for textnode in textnodes:
+            htmlnode.children.append(text_node_to_html_node(textnode))
+
+    return ParentNode(tag="div", children=[htmlnode], props=None)
+
+
+def markdown_to_html_node(markdown: str):
+    htmlnodes = []
+    blocks = markdown_to_blocks(markdown)
+    for block in blocks:
+        htmlnodes.append(block_to_html_node(block))
+
+    return ParentNode("div", children=htmlnodes, props=None)
