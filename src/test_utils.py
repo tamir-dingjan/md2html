@@ -148,6 +148,16 @@ class TestSplitTextNodes(unittest.TestCase):
         ]
         self.assertEqual(text_nodes, expected_split)
 
+    def test_split_text_node_bold_unspaced(self):
+        text_node = TextNode("**Hello**: world it's me", TextType.TEXT, url=None)
+        text_nodes = split_nodes_delimiter([text_node], "**", TextType.BOLD)
+        expected_split = [
+            TextNode("", TextType.TEXT, url=None),
+            TextNode("Hello", TextType.BOLD, url=None),
+            TextNode(": world it's me", TextType.TEXT, url=None),
+        ]
+        self.assertEqual(text_nodes, expected_split)
+
     def test_split_text_node_code(self):
         text_node = TextNode(
             """```
@@ -190,6 +200,20 @@ def hello_world():
             TextNode("Hello world it's ", TextType.TEXT, url=None),
             TextNode("me", TextType.CODE, url=None),
             TextNode("", TextType.TEXT, url=None),
+        ]
+        self.assertEqual(text_nodes, expected_split)
+
+    def test_split_text_node_code_single_delimiter_char(self):
+        text_node = TextNode(
+            "deities (the `Valar` and `Maiar`)", TextType.TEXT, url=None
+        )
+        text_nodes = split_nodes_delimiter([text_node], "`", TextType.CODE)
+        expected_split = [
+            TextNode("deities (the ", TextType.TEXT, url=None),
+            TextNode("Valar", TextType.CODE, url=None),
+            TextNode(" and ", TextType.TEXT, url=None),
+            TextNode("Maiar", TextType.CODE, url=None),
+            TextNode(")", TextType.TEXT, url=None),
         ]
         self.assertEqual(text_nodes, expected_split)
 
@@ -448,6 +472,12 @@ def hello_world():
     print("Hello, world!")
 </code></pre></div></div>"""
 
+        self.assertEqual(target, html.to_html())
+
+    def test_code_single_char_delimiter(self):
+        text = "deities (the `Valar` and `Maiar`)"
+        html = markdown_to_html_node(text)
+        target = """<div><div><p>deities (the <code>Valar</code> and <code>Maiar</code>)</p></div></div>"""
         self.assertEqual(target, html.to_html())
 
     def test_document(self):

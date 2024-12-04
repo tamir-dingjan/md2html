@@ -1,7 +1,7 @@
 from textnode import TextType, TextNode
 from htmlnode import LeafNode, ParentNode
 from blocktypes import BlockType
-import re, os
+import re, os, logging
 
 
 def text_node_to_html_node(text_node: "TextNode"):
@@ -151,6 +151,7 @@ def text_to_textnodes(text: str):
         "**": TextType.BOLD,
         "*": TextType.ITALIC,
         "```": TextType.CODE,
+        "`": TextType.CODE,
     }
     for delim, text_type in delims.items():
         node = split_nodes_delimiter(node, delim, text_type)
@@ -262,7 +263,10 @@ def block_to_html_node(block: str):
 
     # For unordered lists, we need to remove the "- " or "* " at the start of each line
     if tag == "ul":
-        block = "\n".join([x.lstrip("- ").lstrip("* ") for x in block.split("\n")])
+        if block.startswith("- "):
+            block = "\n".join([x.lstrip("- ") for x in block.split("\n")])
+        elif block.startswith("* "):
+            block = "\n".join([x.lstrip("* ") for x in block.split("\n")])
 
     # For ordered lists, we need to remove the "X. " at the start of each line
     if tag == "ol":
@@ -312,7 +316,7 @@ def extract_title(markdown: str):
 
 
 def generate_page(from_path: str, template_path: str, dest_path: str):
-    print(
+    logging.info(
         f"Generating page from {from_path} to {dest_path} using template {template_path}"
     )
     with open(from_path, "r") as f:
@@ -340,7 +344,7 @@ def generate_pages_recursive(
             generate_page(
                 os.path.join(dir_path_content, item),
                 template_path,
-                os.path.join(dest_dir_path, item),
+                os.path.join(dest_dir_path, os.path.splitext(item)[0] + ".html"),
             )
         elif os.path.isdir(os.path.join(dir_path_content, item)):
             generate_pages_recursive(
