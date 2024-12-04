@@ -1,7 +1,7 @@
 from textnode import TextType, TextNode
 from htmlnode import LeafNode, ParentNode
 from blocktypes import BlockType
-import re
+import re, os
 
 
 def text_node_to_html_node(text_node: "TextNode"):
@@ -296,3 +296,55 @@ def markdown_to_html_node(markdown: str):
         htmlnodes.append(block_to_html_node(block))
 
     return ParentNode("div", children=htmlnodes, props=None)
+
+
+def extract_title(markdown: str):
+    title = None
+    blocks = markdown_to_blocks(markdown)
+    for block in blocks:
+        block_type = block_to_blocktype(block)
+        if block_type == BlockType.H1:
+            title = block.strip("# ")
+            break
+    if title == None:
+        raise Exception("No title found in markdown.")
+    return title
+
+
+def generate_page(from_path: str, template_path: str, dest_path: str):
+    print(
+        f"Generating page from {from_path} to {dest_path} using template {template_path}"
+    )
+    with open(from_path, "r") as f:
+        markdown = "".join(f.readlines())
+    with open(template_path, "r") as f:
+        template = "".join(f.readlines())
+
+    html = markdown_to_html_node(markdown).to_html()
+    title = extract_title(markdown)
+    template = template.replace("{{ Title }}", title)
+    template = template.replace("{{ Content }}", html)
+
+    if not os.path.exists(os.path.dirname(dest_path)):
+        os.makedirs(os.path.dirname(dest_path))
+
+    with open(dest_path, "w") as f:
+        f.write(template)
+
+
+def generate_pages_recursive(
+    dir_path_content: str, template_path: str, dest_dir_path: str
+):
+    for item in os.listdir(dir_path_content):
+        if os.path.isfile(os.path.join(dir_path_content, item)):
+            generate_page(
+                os.path.join(dir_path_content, item),
+                template_path,
+                os.path.join(dest_dir_path, item),
+            )
+        elif os.path.isdir(os.path.join(dir_path_content, item)):
+            generate_pages_recursive(
+                os.path.join(dir_path_content, item),
+                template_path,
+                os.path.join(dest_dir_path, item),
+            )

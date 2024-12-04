@@ -506,5 +506,16 @@ def hello_world():
         self.assertEqual(target, html.to_html())
 
 
+class TestExtractTitle(unittest.TestCase):
+    def test_extract_title(self):
+        text = """# This is a H1 heading"""
+        title = extract_title(text)
+        self.assertEqual("This is a H1 heading", title)
+
+    def test_extract_error(self):
+        text = """No heading here"""
+        self.assertRaises(Exception, extract_title, text)
+
+
 if __name__ == "__main__":
     unittest.main()

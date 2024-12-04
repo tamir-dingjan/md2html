@@ -1,5 +1,6 @@
 from textnode import TextType, TextNode
 import os, shutil, logging
+from utils import generate_page
 
 logging.basicConfig(
     filename="main.log",
@@ -58,6 +59,9 @@ def main():
 
     logging.info("Copying files...")
     recursive_copy("static", "public")
+
+    logging.info("Generating pages...")
+    generate_page("content/index.md", "template.html", "public/index.html")
 
     logging.info("Done.")
 
